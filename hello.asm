@@ -102,7 +102,7 @@ fan2:
 ;fan2 content
     mov  ax,0     
     mov  ss,ax
-    mov  sp,0x8200-0x7c00;sp
+    mov  sp,0x8200;sp
     mov  ds,ax
     mov  es,ax
     ;?
@@ -111,9 +111,9 @@ fan2:
     mov bh,0
     mov bl,1
     int 0x10
-    mov  si,fan2msg    
+    mov  si,fan2msg-fan2    
 fan2loop:
-    ;<
+    ;>
     mov al,62
     mov ah,0x0e
     mov bh,0
@@ -123,17 +123,17 @@ fan2loop:
     mov  al,[si]   
     add  si,1
     cmp  al,0    
-    je   fan2ret       
+    je   fan2ret-fan2       
     mov  ah,0x0e   ;print one char
     mov  bx,15     ;black color
     int  0x10      ;video bios
-    jmp  fan2loop
+    jmp  fan2loop-fan2
 fan2ret:
-    jmp hlt2
+    jmp hlt2-fan2
     ret
 hlt2:
     hlt
-    jmp hlt2
+    jmp hlt2-fan2
 fan2msg:
     db   0x0a,0x0a ;»»ÐÐ
     db   "Yafacex OS boot run in fan2!!!?"
