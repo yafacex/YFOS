@@ -9,10 +9,18 @@ init:
     mov  sp,0x7c00 ;sp
     mov  ds,ax
     mov  es,ax
+    ;%
+    mov al,'%'
+    mov ah,0x0e
+    mov bh,0
+    mov bl,1
+    int 0x10
     call loaddisk
     ;call printMem
+    ;call err
     ;jmp mark55aa
-    jmp 0x8200
+    ;jmp 0x8200
+    jmp fan2
     jmp hlt
 hlt:
     hlt
@@ -20,12 +28,10 @@ hlt:
 
 ;Err Report
 err:
-    mov cx,0
     mov  si,errmsg    
 errloop:
     mov  al,[si]   
     add  si,1
-    add cx,1     
     cmp  al,0    
     je   errret       
     mov  ah,0x0e   ;print one char
@@ -58,7 +64,7 @@ loaddisk:
     mov dl,0;floppyA
     int 0x13;bios disk
     jc err
-    call err
+    ;call err
     ret
 
 printMem:
@@ -78,7 +84,7 @@ printMem:
     mov cx,0x8200
     mov si,cx
     mov dx,cx
-    add dx,15
+    add dx,25
     ;from beginning
     ;mov ah,0x02
     ;mov bx,0
@@ -99,22 +105,32 @@ mark55aa:
     db   0x55,0xaa ;magic number
 ;fan 2
 fan2:
+    jmp fan2prog
+fan2msg:
+    db   0x0a,0x0a ;换行
+    db   "Yafacex OS boot run in fan2!!!?"
+    db   0x0a      ;换行
+    db   0
 ;fan2 content
-    mov  ax,0     
-    mov  ss,ax
-    mov  sp,0x8200;sp
-    mov  ds,ax
-    mov  es,ax
+fan2prog:
     ;?
-    mov al,63
+    mov al,'#'
     mov ah,0x0e
     mov bh,0
     mov bl,1
     int 0x10
-    mov  si,fan2msg-fan2    
+    mov  ax,0     
+    mov  ss,ax
+    mov  sp,0x7c00;sp
+    mov  ds,ax
+    mov  es,ax
+    ;mov ax,fan2
+    ;cmp ax,510
+    je fan2loop+0x8200-0x7c00
+    mov  si,0x8202    
 fan2loop:
-    ;>
-    mov al,62
+    ;<
+    mov al,'<'
     mov ah,0x0e
     mov bh,0
     mov bl,1
@@ -123,20 +139,15 @@ fan2loop:
     mov  al,[si]   
     add  si,1
     cmp  al,0    
-    je   fan2ret-fan2       
+    je   fan2ret+0x8200-0x7c00       
     mov  ah,0x0e   ;print one char
     mov  bx,15     ;black color
     int  0x10      ;video bios
-    jmp  fan2loop-fan2
+    jmp  fan2loop+0x8200-0x7c00
 fan2ret:
-    jmp hlt2-fan2
+    jmp hlt2+0x8200-0x7c00
     ret
 hlt2:
     hlt
-    jmp hlt2-fan2
-fan2msg:
-    db   0x0a,0x0a ;换行
-    db   "Yafacex OS boot run in fan2!!!?"
-    db   0x0a      ;换行
-    db   0
+    jmp hlt2+0x8200-0x7c00
     resb 1024-($-$$)
