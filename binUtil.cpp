@@ -166,7 +166,7 @@ void trim(vector<string>& args){
     
     FILE* fp = fopen(srcFile.c_str(), "wb+");
     if (fp) {
-        void buffer = malloc(length);
+        void* buffer = malloc(length);
         fseek(fp, fromAddr, SEEK_SET);
         fread(buffer, 1, length, fp);
         fseek(fp, 0, SEEK_SET);
