@@ -87,7 +87,8 @@ string char2hex(char c){
 
 void copySeg(vector<string>& args){
     if (args.size() != 7) {
-        printf("Copy Seg Usage:\n -cp [src filename] [src from] [src to] [dest filename] [dest from]\n\n * means end of file");
+        printf("Copy Seg Usage:\n -cp [src filename] [src from] [src to] [dest filename] [dest from]\n\n * means end of file\n");
+        return;
     }
     
     string srcFile = args[2];
@@ -97,7 +98,7 @@ void copySeg(vector<string>& args){
     string destFrom = args[6];
     
     FILE* from = fopen(srcFile.c_str(), "r");
-    FILE* to = fopen(destFile.c_str(), "wb");
+    FILE* to = fopen(destFile.c_str(), "at+");
     
     long srcFromAddr = addr2long(srcFrom);
     long srcToAddr = 0;
@@ -125,7 +126,7 @@ void copySeg(vector<string>& args){
 }
 
 void log(vector<string>& args){
-    if (args.size() < 2) {
+    if (args.size() != 5) {
         printf("Log Seg Usage:\n -log [src filename] [src from] [src to]\n\n");
     }
     string srcFile = args[2];
@@ -148,6 +149,28 @@ void log(vector<string>& args){
             c = fgetc(fp);
             printf("%s",char2hex(c).c_str());
         }
+        printf("\n\n");
+    }
+}
+
+void trim(vector<string>& args){
+    if (args.size() != 5) {
+        printf("Log Seg Usage:\n -log [src filename] [src from] [src to]\n\n");
+    }
+    string srcFile = args[2];
+    string srcFrom = args[3];
+    string srcTo = args[4];
+    long fromAddr = addr2long(srcFrom);
+    long toAddr = addr2long(srcTo);
+    long length = toAddr - fromAddr;
+    
+    FILE* fp = fopen(srcFile.c_str(), "wb+");
+    if (fp) {
+        void buffer = malloc(length);
+        fseek(fp, fromAddr, SEEK_SET);
+        fread(buffer, 1, length, fp);
+        fseek(fp, 0, SEEK_SET);
+        fwrite(buffer, 1, length, fp);
     }
 }
 int main(int argc, const char * argv[])
@@ -158,14 +181,14 @@ int main(int argc, const char * argv[])
         printf("Arg : %s\n",args[i].c_str());
     }
     
-//    {
-//        args.push_back("-cp");
-//        args.push_back("./iplo2.img");
-//        args.push_back("0");
-//        args.push_back("*");
-//        args.push_back("./iplo.img");
-//        args.push_back("512");
-//    }
+    {
+        args.push_back("-cp");
+        args.push_back("./iplo2.img");
+        args.push_back("0");
+        args.push_back("512");
+        args.push_back("./iplo.img");
+        args.push_back("512");
+    }
 //    {
 //        args.push_back("-log");
 //        args.push_back("./iplo.img");
@@ -183,6 +206,8 @@ int main(int argc, const char * argv[])
         copySeg(args);
     }else if(op == "-log"){
         log(args);
+    }else if(op == "-trim"){
+        trim(args);
     }else{
         printf("Pls Input Operate!\n -cp / -log\n");
     }
