@@ -28,25 +28,27 @@ char toLowerCase(const char c){
     return 'a';
 }
 
+bool isHex(string number){
+    string pre = number.substr(0,2);
+    return pre == "0x";
+}
+
 unsigned long addr2long(string hex){
     bool bHex = false;
-    if (hex.size() > 2) {
-        string pre = hex.substr(0,2);
-        if (pre == "0x") {
-            bHex = true;
-            unsigned long number = 0;
-            for (int i = 2; i < hex.size(); ++i) {
-                if (isAlphet(hex.at(i))) {
-                    char lower = toLowerCase(hex.at(i));
-                    int val = lower - 'a';
-                    number = (number << 4) + val;
-                }else{
-                    int val = hex.at(i) - '0';
-                    number = (number << 4) + val;
-                }
+    if (isHex(hex)) {
+        bHex = true;
+        unsigned long number = 0;
+        for (int i = 2; i < hex.size(); ++i) {
+            if (isAlphet(hex.at(i))) {
+                char lower = toLowerCase(hex.at(i));
+                int val = lower - 'a';
+                number = (number << 4) + val;
+            }else{
+                int val = hex.at(i) - '0';
+                number = (number << 4) + val;
             }
-            return number;
         }
+        return number;
     }
     if (!bHex) {
         //Oct
@@ -54,6 +56,7 @@ unsigned long addr2long(string hex){
         for (int i = 0; i < hex.size(); ++i) {
             number = number * 10 + hex.at(i) - '0';
         }
+        return number;
     }
     printf("Err:Bad Number [ %s ]\n",hex.c_str());
     return 0;
@@ -77,21 +80,48 @@ char int2hex(int a){
 
 string char2hex(char c){
     char result[3];
-    result[0] = int2hex(c>>4 & 0x000f);
     result[1] = int2hex(c & 0x000f);
-    return string(result,result+1);
+    result[0] = int2hex(c>>4 & 0x000f);
+    return string(result,result+2);
 }
 
 void copySeg(vector<string>& args){
-    if (args.size() < 2) {
-        printf("Copy Seg Usage:\n -cp [src filename] [src from] [src to] [dest filename] [dest from] [dest to]\n\n");
+    if (args.size() != 7) {
+        printf("Copy Seg Usage:\n -cp [src filename] [src from] [src to] [dest filename] [dest from]\n\n * means end of file");
     }
+    
     string srcFile = args[2];
     string srcFrom = args[3];
     string srcTo = args[4];
     string destFile = args[5];
     string destFrom = args[6];
-    string destTo = args[7];
+    
+    FILE* from = fopen(srcFile.c_str(), "r");
+    FILE* to = fopen(destFile.c_str(), "wb");
+    
+    long srcFromAddr = addr2long(srcFrom);
+    long srcToAddr = 0;
+    if (srcTo == "*") {
+        fseek(from, 0, SEEK_END);
+        srcToAddr = ftell(from);
+    }else{
+        srcToAddr = addr2long(srcTo);
+    }
+    long destFromAddr = addr2long(destFrom);
+    
+    long length = srcToAddr - srcFromAddr;
+    
+    fseek(from, srcFromAddr, SEEK_SET);
+    fseek(to, destFromAddr, SEEK_SET);
+
+    void* buffer = (void*)malloc(length);
+    
+    fread(buffer, 1, length, from);
+    fwrite(buffer, 1, length, to);
+    
+    printf("from:%s\n",srcFile.c_str());
+    printf("to:%s\n",destFile.c_str());
+    printf("write %ld bytes from %s to %s\n",length,srcFrom.c_str(),destFrom.c_str());
 }
 
 void log(vector<string>& args){
@@ -112,7 +142,7 @@ void log(vector<string>& args){
                 printf("\n[[[[sector %ld]]]]\n0x",i/512);
             }else if(i%16 == 0){
                 printf("\n0x");
-            }else if (i%4 == 0) {
+            }else if (i%2 == 0) {
                 printf("\t0x");
             }
             c = fgetc(fp);
@@ -128,13 +158,21 @@ int main(int argc, const char * argv[])
         printf("Arg : %s\n",args[i].c_str());
     }
     
-    {
-        args.push_back("-log");
-        args.push_back("./BinUtil");
-    }
+//    {
+//        args.push_back("-cp");
+//        args.push_back("./iplo2.img");
+//        args.push_back("0");
+//        args.push_back("*");
+//        args.push_back("./iplo.img");
+//        args.push_back("512");
+//    }
+//    {
+//        args.push_back("-log");
+//        args.push_back("./iplo.img");
+//    }
     
     if (args.size() == 1) {
-        printf("No Arg Input!\n");
+        printf("Pls Input Operate!\n -cp / -log\n");
         return 1;
     }
     
