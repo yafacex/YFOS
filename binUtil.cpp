@@ -98,7 +98,7 @@ void copySeg(vector<string>& args){
     string destFrom = args[6];
     
     FILE* from = fopen(srcFile.c_str(), "r");
-    FILE* to = fopen(destFile.c_str(), "at+");
+    FILE* to = fopen(destFile.c_str(), "wb");
     
     long srcFromAddr = addr2long(srcFrom);
     long srcToAddr = 0;
@@ -111,15 +111,43 @@ void copySeg(vector<string>& args){
     long destFromAddr = addr2long(destFrom);
     
     long length = srcToAddr - srcFromAddr;
-    
-    fseek(from, srcFromAddr, SEEK_SET);
-    fseek(to, destFromAddr, SEEK_SET);
+    //brefore & after
+    {
+        void* bufferBefore = NULL;
+        void* bufferAfter = NULL;
+        if (destFromAddr > 0) {
+            fseek(to, 0, SEEK_SET);
+            bufferBefore = malloc(length);
+            fread(bufferBefore, 1, destFromAddr, from);
+            
+        }
+        fseek(to, 0, SEEK_END);
+        long toEnd = ftell(to);
+        long filledEnd = destFromAddr + length;
+        if (toEnd > filledEnd) {
+            fseek(to, filledEnd, SEEK_SET);
+            bufferAfter = malloc(toEnd - filledEnd);
+            fread(bufferAfter, 1, toEnd - filledEnd, to);
+        }
+        if (destFromAddr > 0) {
+            fseek(to, 0, SEEK_SET);
+            fwrite(bufferBefore, 1, destFromAddr, to);
+        }
+        if (toEnd > filledEnd) {
+            fseek(to, filledEnd, SEEK_SET);
+            fwrite(bufferAfter, 1, toEnd - filledEnd, to);
+        }
+    }
+    //fill
+    {
+        fseek(from, srcFromAddr, SEEK_SET);
+        fseek(to, destFromAddr, SEEK_SET);
 
-    void* buffer = (void*)malloc(length);
-    
-    fread(buffer, 1, length, from);
-    fwrite(buffer, 1, length, to);
-    
+        void* buffer = (void*)malloc(length);
+        
+        fread(buffer, 1, length, from);
+        fwrite(buffer, 1, length, to);
+    }
     printf("from:%s\n",srcFile.c_str());
     printf("to:%s\n",destFile.c_str());
     printf("write %ld bytes from %s to %s\n",length,srcFrom.c_str(),destFrom.c_str());
