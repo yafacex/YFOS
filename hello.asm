@@ -20,6 +20,7 @@ init:
     ;call err
     ;jmp mark55aa
     ;jmp 0x8200
+    call err
     jmp fan2
     jmp hlt
 hlt:

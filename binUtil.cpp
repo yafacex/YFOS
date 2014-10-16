@@ -87,7 +87,7 @@ string char2hex(char c){
 
 void copySeg(vector<string>& args){
     if (args.size() != 7) {
-        printf("Copy Seg Usage:\n -cp [src filename] [src from] [src to] [dest filename] [dest from]\n\n * means end of file\n");
+        printf("Copy Seg Usage:\n -cp [src filename] [src from] [src to] [dest filename] [dest from]\n\n $ means end of file\n");
         return;
     }
     
@@ -97,56 +97,49 @@ void copySeg(vector<string>& args){
     string destFile = args[5];
     string destFrom = args[6];
     
-    FILE* from = fopen(srcFile.c_str(), "r");
-    FILE* to = fopen(destFile.c_str(), "wb");
+    FILE* srcf = fopen(srcFile.c_str(), "r");
+    FILE* destf = fopen(destFile.c_str(), "r");
     
     long srcFromAddr = addr2long(srcFrom);
     long srcToAddr = 0;
-    if (srcTo == "*") {
-        fseek(from, 0, SEEK_END);
-        srcToAddr = ftell(from);
+    if (srcTo == "$") {
+        fseek(srcf, 0, SEEK_END);
+        srcToAddr = ftell(srcf);
     }else{
         srcToAddr = addr2long(srcTo);
     }
     long destFromAddr = addr2long(destFrom);
     
     long length = srcToAddr - srcFromAddr;
-    //brefore & after
-    {
-        void* bufferBefore = NULL;
-        void* bufferAfter = NULL;
-        if (destFromAddr > 0) {
-            fseek(to, 0, SEEK_SET);
-            bufferBefore = malloc(length);
-            fread(bufferBefore, 1, destFromAddr, from);
-            
-        }
-        fseek(to, 0, SEEK_END);
-        long toEnd = ftell(to);
-        long filledEnd = destFromAddr + length;
-        if (toEnd > filledEnd) {
-            fseek(to, filledEnd, SEEK_SET);
-            bufferAfter = malloc(toEnd - filledEnd);
-            fread(bufferAfter, 1, toEnd - filledEnd, to);
-        }
-        if (destFromAddr > 0) {
-            fseek(to, 0, SEEK_SET);
-            fwrite(bufferBefore, 1, destFromAddr, to);
-        }
-        if (toEnd > filledEnd) {
-            fseek(to, filledEnd, SEEK_SET);
-            fwrite(bufferAfter, 1, toEnd - filledEnd, to);
-        }
+    
+    fseek(destf, 0, SEEK_END);
+    long destEnd = ftell(destf);
+    
+    long filledEnd = destFromAddr + length;
+    long finalDestEnd = destEnd > filledEnd ? destEnd : filledEnd;
+    
+    void* destBuffer = malloc(finalDestEnd);
+    
+    
+    if (destFromAddr > 0) {
+        fseek(destf, 0, SEEK_SET);
+        fread(destBuffer, 1, destFromAddr, destf);
     }
+    
+    fseek(srcf, srcFromAddr, SEEK_SET);
+    fread((void*)((long)destBuffer+destFromAddr), 1, length, srcf);
+    
+    if (destEnd > filledEnd) {
+        fseek(destf, filledEnd, SEEK_SET);
+        fread((void*)((long)destBuffer+filledEnd), 1, destEnd - filledEnd, destf);
+    }
+   
     //fill
     {
-        fseek(from, srcFromAddr, SEEK_SET);
-        fseek(to, destFromAddr, SEEK_SET);
-
-        void* buffer = (void*)malloc(length);
-        
-        fread(buffer, 1, length, from);
-        fwrite(buffer, 1, length, to);
+        fclose(destf);
+        FILE* destwf = fopen(destFile.c_str(), "wb");
+        fseek(destwf, 0, SEEK_SET);
+        fwrite(destBuffer, 1, finalDestEnd, destwf);
     }
     printf("from:%s\n",srcFile.c_str());
     printf("to:%s\n",destFile.c_str());
@@ -204,19 +197,22 @@ void trim(vector<string>& args){
 int main(int argc, const char * argv[])
 {
     vector<string> args;
+    
     for (int i =0; i < argc; ++i) {
         args.push_back(string(argv[i]));
         printf("Arg : %s\n",args[i].c_str());
     }
     
+    
     {
         args.push_back("-cp");
         args.push_back("./iplo2.img");
         args.push_back("0");
-        args.push_back("512");
+        args.push_back("$");
         args.push_back("./iplo.img");
         args.push_back("512");
     }
+    
 //    {
 //        args.push_back("-log");
 //        args.push_back("./iplo.img");
