@@ -1,0 +1,4 @@
+most simple c compile -> xxx.c -(cc1)-> xxx.asm -(as)-> xxx.o -> (ld) ->xx.exe 
+
+
+http://linux.die.net/man/1/ld
